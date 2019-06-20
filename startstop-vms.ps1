@@ -25,7 +25,7 @@
         (
     	#The name of the Automation Credential Asset this runbook will use to authenticate to Azure.
         [Parameter(Mandatory=$true)]
-        [String] $SubscriptionName  = "Logistyx-Production",
+        [String] $SubscriptionName  = "Subname",
 
         [Parameter(Mandatory=$true)]
         [String] $StartorStop = "Start",
