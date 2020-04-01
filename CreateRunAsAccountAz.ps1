@@ -28,15 +28,14 @@ Param (
     [String] $EnterpriseCertPathForClassicRunAsAccount,
 
     [Parameter(Mandatory = $false)]
-    [String] $EnterpriseCertPlainPasswordForClassicRunAsAccount,
-
-    [Parameter(Mandatory = $false)]
     [ValidateSet("AzureCloud", "AzureUSGovernment")]
     [string]$EnvironmentName = "AzureCloud",
 
     [Parameter(Mandatory = $false)]
     [int] $SelfSignedCertNoOfMonthsUntilExpired = 36
 )
+
+sleep 10
 
 function CreateSelfSignedCertificate([string] $certificateName, [string] $selfSignedCertPlainPassword,
     [string] $certPath, [string] $certPathCer, [string] $selfSignedCertNoOfMonthsUntilExpired ) {
@@ -90,24 +89,6 @@ function CreateAutomationConnectionAsset ([string] $resourceGroup, [string] $aut
     New-AzAutomationConnection -ResourceGroupName $ResourceGroup -AutomationAccountName $automationAccountName -Name $connectionAssetName -ConnectionTypeName $connectionTypeName -ConnectionFieldValues $connectionFieldValues
 }
 
-#Import-Module AzureRM.Profile
-#Import-Module AzureRM.Resources
-#
-#$AzureRMProfileVersion = (Get-Module AzureRM.Profile).Version
-#if (!(($AzureRMProfileVersion.Major -ge 3 -and $AzureRMProfileVersion.Minor -ge 4) -or ($AzureRMProfileVersion.Major -gt 3))) {
-#    Write-Error -Message "Please install the latest Azure PowerShell and retry. Relevant doc url : https://docs.microsoft.com/powershell/azureps-cmdlets-docs/ "
-#    return
-#}
-
-# To use the new Az modules to create your Run As accounts please uncomment the following lines and ensure you comment out the previous 8 lines that import the AzureRM modules to avoid any issues. To learn about about using Az modules in your Automation Account see https://docs.microsoft.com/azure/automation/az-modules
-
-# Import-Module Az.Automation
-# Enable-AzureRmAlias
-
-
-#Connect-AzAccount # -Environment $EnvironmentName 
-# $Subscription = Select-AzSubscription -SubscriptionId $SubscriptionId
-
 # Create a Run As account by using a service principal
 $CertifcateAssetName = "AzureRunAsCertificate"
 $ConnectionAssetName = "AzureRunAsConnection"
@@ -140,39 +121,3 @@ $ConnectionFieldValues = @{"ApplicationId" = $ApplicationId; "TenantId" = $Tenan
 
 # Create an Automation connection asset named AzureRunAsConnection in the Automation account. This connection uses the service principal.
 CreateAutomationConnectionAsset $ResourceGroup $AutomationAccountName $ConnectionAssetName $ConnectionTypeName $ConnectionFieldValues
-
-if ($CreateClassicRunAsAccount) {
-    # Create a Run As account by using a service principal
-    $ClassicRunAsAccountCertifcateAssetName = "AzureClassicRunAsCertificate"
-    $ClassicRunAsAccountConnectionAssetName = "AzureClassicRunAsConnection"
-    $ClassicRunAsAccountConnectionTypeName = "AzureClassicCertificate "
-    $UploadMessage = "Please upload the .cer format of #CERT# to the Management store by following the steps below." + [Environment]::NewLine +
-    "Log in to the Microsoft Azure portal (https://portal.azure.com) and select Subscriptions -> Management Certificates." + [Environment]::NewLine +
-    "Then click Upload and upload the .cer format of #CERT#"
-
-    if ($EnterpriseCertPathForClassicRunAsAccount -and $EnterpriseCertPlainPasswordForClassicRunAsAccount ) {
-        $PfxCertPathForClassicRunAsAccount = $EnterpriseCertPathForClassicRunAsAccount
-        $PfxCertPlainPasswordForClassicRunAsAccount = $EnterpriseCertPlainPasswordForClassicRunAsAccount
-        $UploadMessage = $UploadMessage.Replace("#CERT#", $PfxCertPathForClassicRunAsAccount)
-    }
-    else {
-        $ClassicRunAsAccountCertificateName = $AutomationAccountName + $ClassicRunAsAccountCertifcateAssetName
-        $PfxCertPathForClassicRunAsAccount = Join-Path $env:TEMP ($ClassicRunAsAccountCertificateName + ".pfx")
-        $PfxCertPlainPasswordForClassicRunAsAccount = $SelfSignedCertPlainPassword
-        $CerCertPathForClassicRunAsAccount = Join-Path $env:TEMP ($ClassicRunAsAccountCertificateName + ".cer")
-        $UploadMessage = $UploadMessage.Replace("#CERT#", $CerCertPathForClassicRunAsAccount)
-        CreateSelfSignedCertificate $ClassicRunAsAccountCertificateName $PfxCertPlainPasswordForClassicRunAsAccount $PfxCertPathForClassicRunAsAccount $CerCertPathForClassicRunAsAccount $SelfSignedCertNoOfMonthsUntilExpired
-    }
-
-    # Create the Automation certificate asset
-    CreateAutomationCertificateAsset $ResourceGroup $AutomationAccountName $ClassicRunAsAccountCertifcateAssetName $PfxCertPathForClassicRunAsAccount $PfxCertPlainPasswordForClassicRunAsAccount $false
-
-    # Populate the ConnectionFieldValues
-    $SubscriptionName = $subscription.Subscription.Name
-    $ClassicRunAsAccountConnectionFieldValues = @{"SubscriptionName" = $SubscriptionName; "SubscriptionId" = $SubscriptionId; "CertificateAssetName" = $ClassicRunAsAccountCertifcateAssetName}
-
-    # Create an Automation connection asset named AzureRunAsConnection in the Automation account. This connection uses the service principal.
-    CreateAutomationConnectionAsset $ResourceGroup $AutomationAccountName $ClassicRunAsAccountConnectionAssetName $ClassicRunAsAccountConnectionTypeName   $ClassicRunAsAccountConnectionFieldValues
-
-    Write-Host -ForegroundColor red       $UploadMessage
-}
