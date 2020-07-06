@@ -55,11 +55,11 @@ function CreateServicePrincipal([System.Security.Cryptography.X509Certificates.X
     # Create an Azure AD application, AD App Credential, AD ServicePrincipal
 
     # Requires Application Developer Role, but works with Application administrator or GLOBAL ADMIN
-    $Application = New-AzADApplication -DisplayName $ApplicationDisplayName -HomePage ("http://" + $applicationDisplayName) -IdentifierUris ("http://" + $keyId) 
+    $Application = New-AzADApplication -DisplayName $ApplicationDisplayName -HomePage ("http://" + $applicationDisplayName) -IdentifierUris ("http://" + $keyId)
     # Requires Application administrator or GLOBAL ADMIN
     $ApplicationCredential = New-AzADAppCredential -ApplicationId $Application.ApplicationId -CertValue $keyValue -StartDate $PfxCert.NotBefore -EndDate $PfxCert.NotAfter
     # Requires Application administrator or GLOBAL ADMIN
-    $ServicePrincipal = New-AzADServicePrincipal -ApplicationId $Application.ApplicationId 
+    $ServicePrincipal = New-AzADServicePrincipal -ApplicationId $Application.ApplicationId -SkipAssignment
     $GetServicePrincipal = Get-AzADServicePrincipal -ObjectId $ServicePrincipal.Id
 
     # Sleep here for a few seconds to allow the service principal application to become active (ordinarily takes a few seconds)
@@ -67,7 +67,7 @@ function CreateServicePrincipal([System.Security.Cryptography.X509Certificates.X
    
  # Requires User Access Administrator or Owner.
  # Enable this if you want the app ID to have Contributor access to the current subsctiption.  Better to find and add specificly or custom roles.
-    $NewRole = New-AzRoleAssignment -RoleDefinitionName Contributor -ServicePrincipalName $Application.ApplicationId -ErrorAction SilentlyContinue
+  #  $NewRole = New-AzRoleAssignment -RoleDefinitionName Contributor -ServicePrincipalName $Application.ApplicationId -ErrorAction SilentlyContinue
     $Retries = 0;
     While ($NewRole -eq $null -and $Retries -le 6) {
         Sleep -s 10
