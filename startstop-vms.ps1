@@ -48,7 +48,7 @@ Connect-AzAccount -ServicePrincipal -Tenant $connection.TenantID `
 -ApplicationId $connection.ApplicationID -CertificateThumbprint $connection.CertificateThumbprint
 
 # Set subscriptions to loop through use "s and comma to add multiple subs
-$subscriptionIDs = @("0c037a88-2faa-479a-889b-584d852cb8ab")
+$subscriptionIDs = @("SubID")
 
 Foreach($SubscriptionID in $subscriptionIDs)
 {
