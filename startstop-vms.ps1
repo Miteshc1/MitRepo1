@@ -17,7 +17,8 @@
         AUTHOR: Mitesh Chauhan - 22/9/2019, Updated 14/10/2019
         Update : Mitesh Chauhan - 7/1/2020 - Added tenant ID, Cleaned up screen prints.
         Update : Mitesh Chauhan - 24/1/2020 - Fixed bugs with tennant ID, added more messaging and check for empty VMList.
-
+        Update : Mitesh Chauhan - 5th Aug 2020 - Changed Simuulate from Bolean to string to accomodate for Azure Automation Update Management solution passing in string instead of boolean.
+                        Simulate Check now requires "True" or "False" as a string.
         # For Testing 
         $cred = Get-credential
         Connect-azAccount -Credential $Cred
@@ -40,7 +41,7 @@ param
         [String] $TimeZone  = "CDT",
 
         [parameter(Mandatory=$false)]
-        [bool]$Simulate = $false
+        $Simulate = "false"
     )
 
 $connection = Get-AutomationConnection -Name AzureRunAsConnection
@@ -48,7 +49,7 @@ Connect-AzAccount -ServicePrincipal -Tenant $connection.TenantID `
 -ApplicationId $connection.ApplicationID -CertificateThumbprint $connection.CertificateThumbprint
 
 # Set subscriptions to loop through use "s and comma to add multiple subs
-$subscriptionIDs = @("SubID")
+$subscriptionIDs = @("subid", "subid", "subid")
 
 Foreach($SubscriptionID in $subscriptionIDs)
 {
@@ -64,8 +65,8 @@ Write-Output "Timezone selected : $TimeZone"
 If($StartorStop -ieq "Stop")
 {
 Write-Output "Getting VM List for $StartorStop Action"
-$vmList =  (Get-AzResource -Tag @{Autoshutdown="$Timezone"} -ResourceType Microsoft.Compute/virtualMachines) | Select Name, resourcegroupName, tags 
-$Vmlist  | Select name, resourcegroupName | ft
+$vmList =  (Get-AzResource -Tag @{Autoshutdown="$Timezone"} -ResourceType Microsoft.Compute/virtualMachines) | Select-object Name, resourcegroupName, tags 
+$Vmlist  | Select-Object name, resourcegroupName | ft
     If($vmList)
     {
         foreach ($VM in $vmlist)
@@ -77,7 +78,7 @@ $Vmlist  | Select name, resourcegroupName | ft
             }
         else
         {
-            If($Simulate)
+            If($Simulate -ieq "True" -or $Simulate -ieq "true")
                 {
                 $VM.Name + " would have been shut down."
                 }
@@ -106,8 +107,8 @@ $Vmlist  | Select name, resourcegroupName | ft
     elseif($StartorStop -ieq "Start")
     {
     Write-Output "Getting VM List for $StartorStop Action"
-    $vmList =  (Get-AzResource -Tag @{Autostart="$Timezone"} -ResourceType Microsoft.Compute/virtualMachines) | Select Name, resourcegroupName, tags 
-    $Vmlist  | Select name, resourcegroupName | ft
+    $vmList =  (Get-AzResource -Tag @{Autostart="$Timezone"} -ResourceType Microsoft.Compute/virtualMachines) | Select-Object Name, resourcegroupName, tags 
+    $Vmlist  | Select-Object name, resourcegroupName | ft
 
     If($vmList)
     {
@@ -121,7 +122,7 @@ $Vmlist  | Select name, resourcegroupName | ft
                 }
                     else
                 {
-                    If($Simulate)
+                If($Simulate -ieq "True" -or $Simulate -ieq "true")
                     {
                     $VM.Name + " would have been started."
                     }
