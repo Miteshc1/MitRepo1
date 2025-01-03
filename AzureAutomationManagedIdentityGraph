@@ -1,0 +1,73 @@
+# This script can be used to setup company name.  It is an example for using an Azure Automation account with the managed identity.
+# Make sure the identity has the right roles in Entra ID as specified below.  Note that this script will change the company name so check and use with caution.
+
+# This is a template runbook that allows you to connect to Azure, Entra ID and Exchange Online using the Managed Identity of the Azure Automation Account.
+# The Azure Automation Account will need to have a system identity assigned AND be enabled.
+
+# To enable the Automation Account run the line below. Only needs to be done once. 
+# $output = Set-AzAutomationAccount -ResourceGroupName $resourceGroup -Name $automationAccount -AssignSystemIdentity
+# $output
+
+# For testing interactively with Graph 
+# Connect-Graph -Scopes "User.ReadWrite"
+
+# Latest Modules requried to be installed in Azure Automation - PowerShell v5.1
+# Az.ManagedIdentities, Az.Graph, Az.Resources, Az.Accounts
+
+# Automation Account Permissions
+# The Automation Account Managed identity will need permissions in the systems you want to interact with e.g.
+# Directory reader / Writer role in Entra ID
+# Exchange Admin if doing MS Online mailbox work
+# Azure Permissions on resources if Azure automation work is required 
+
+# If connecting to Azure and require connection.
+# $resourceGroup = "RG-WE-PRD-INFRA"
+# $AutomationAccount = "AUTO-WE-PRD-INFRA"
+# $principalId = "xxx-xxxx-xxx-xxx-xxxxx"
+# $TenantId = "Yout Tenant ID"
+# $m365Domain = "yourdomain.onmicrosoft.com"
+
+
+param(
+    [Parameter(Mandatory=$false)]
+    [string] $AddorRemove = "Add",
+
+    [Parameter(Mandatory=$false)]
+    [string] $UPN = "usernametocheck@yourdomain.co.uk"
+)
+
+Write-Output "option Selected : $AddorRemove"
+Write-Output "User Selected : $UPN"
+
+# Use this to connect to Azure
+# Write-Output "Connecting to Azure with identity"
+# $ConnectAzure = Connect-AzAccount -Identity
+# $ConnectAzure
+
+Write-Output "Connecting to Entra ID using Identity"
+$connectEntraID = Connect-MgGraph -Identity
+$connectEntraID
+
+# Use this to connect to Exchange Online
+# Connect to Exchange Online with the system-assigned managed identity
+# Write-Output "Connecting to Exchange Online"
+# Connect-ExchangeOnline -Identity -Organization $m365Domain
+
+# Get the current user details
+Write-Output "Checking User..."
+$user = Get-MgUser -userid $UPN -property CompanyName | fl
+Write-Output "Current value for company name..."
+$user
+
+# Set New company Name - Uncomment the update-mguser line to enable the change
+Write-Output "Setting $UPN Company name to $companyname..."
+# update-mguser -UserId $upn -CompanyName "Companyname Admins"
+sleep 5
+$user = Get-MgUser -userid $UPN -property CompanyName | fl
+Write-Output "New value for company name..."
+$user
+
+
+
+# Write the output to the job stream
+Write-Output "Script Complete."
